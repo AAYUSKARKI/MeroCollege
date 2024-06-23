@@ -32,7 +32,7 @@ const CollegeDetail: React.FC = () => {
   useEffect(() => {
     const fetchCollege = async () => {
       try {
-        const response = await axios.get(`http://localhost:7000/api/colleges/${id}`);
+        const response = await axios.get(`https://merocollege.onrender.com/api/colleges/${id}`);
         setCollege(response.data);
         setCenter([response.data.location.coordinates[1], response.data.location.coordinates[0]]);
         setLoading(false);

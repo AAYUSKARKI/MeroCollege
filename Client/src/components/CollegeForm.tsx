@@ -30,7 +30,7 @@ const CollegeForm: React.FC<CollegeFormProps> = ({ onCollegeAdded }) => {
         imageUrl,
       };
 
-      await axios.post('http://localhost:7000/api/colleges', newCollege);
+      await axios.post('https://merocollege.onrender.com/api/colleges', newCollege);
       onCollegeAdded();
       clearForm();
     } catch (error) {

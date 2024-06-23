@@ -41,7 +41,7 @@ const CollegeList: React.FC = () => {
     // Fetch colleges
     const fetchColleges = async () => {
       try {
-        const response = await axios.get('http://localhost:7000/api/colleges');
+        const response = await axios.get('https://merocollege.onrender.com/api/colleges');
         setColleges(response.data); // Assuming response.data is an array of College objects
         setLoading(false); // Set loading to false after data is fetched
       } catch (error) {
@@ -60,7 +60,7 @@ const CollegeList: React.FC = () => {
     const fetchNearbyColleges = async () => {
       if (userLocation) {
         try {
-          const response = await axios.get('http://localhost:7000/api/nearbyColleges', {
+          const response = await axios.get('https://merocollege.onrender.com/api/nearbyColleges', {
             params: {
               lat: userLocation[0],
               lng: userLocation[1],
