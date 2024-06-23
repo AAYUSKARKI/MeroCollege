@@ -1,12 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
-
-interface CollegeParams {
-  id: string;
-}
 
 interface College {
   _id: string;
@@ -27,7 +23,11 @@ const CollegeDetail: React.FC = () => {
   const { id } = useParams();
   const [college, setCollege] = useState<College | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [center, setCenter] = useState<[number, number] | null>(null);
+  const [center, setCenter] = useState<[number, number] | undefined>(undefined);
+
+  const [track, setTrack] = useState<boolean>(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [pathCoordinates, setPathCoordinates] = useState<[number, number][]>([]);
 
   useEffect(() => {
     const fetchCollege = async () => {
@@ -45,13 +45,67 @@ const CollegeDetail: React.FC = () => {
     fetchCollege();
   }, [id]);
 
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation([latitude, longitude]);
+        },
+        (error) => {
+          console.error('Error getting user location:', error);
+        }
+      );
+    }
+  }, []);
+
   const defaultIcon = L.icon({
     iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
-    shadowSize: [41, 41]
+    shadowSize: [41, 41],
   });
+
+  const handleTrack = () => {
+    setTrack(!track);
+  };
+  let animationFrameId: number | undefined;
+  const animateMovement = () => {
+    if (track && userLocation && center) {
+      const [startLat, startLng] = userLocation;
+      const [collegeLat, collegeLng] = center;
+  
+      const newLat = startLat + (collegeLat - startLat) * 0.01;
+      const newLng = startLng + (collegeLng - startLng) * 0.01;
+  
+      setCenter([newLat, newLng]);
+  
+      setPathCoordinates(prevPath => [...prevPath, [newLat, newLng]]);
+  
+      animationFrameId = window.requestAnimationFrame(animateMovement);
+    }
+  };
+  
+  
+  useEffect(() => {
+   
+  
+    const animate = () => {
+      animateMovement();
+      animationFrameId = requestAnimationFrame(animate);
+    };
+  
+    if (track) {
+      animationFrameId = requestAnimationFrame(animate);
+    }
+  
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [track, userLocation, center]);
 
   if (loading) {
     return <div>Loading...</div>; // Render a loading indicator while fetching data
@@ -68,19 +122,19 @@ const CollegeDetail: React.FC = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
               />
-              <Marker position={center} icon={defaultIcon}>
-                <Popup>
-                  <div>
-                    <h3>{college?.name}</h3>
-                    <p>{college?.address}</p>
-                    <p>{college?.description}</p>
-                    <p><a href={`tel:${college?.contactNumber}`}>{college?.contactNumber}</a></p>
-                    <p><a href={`mailto:${college?.email}`}>{college?.email}</a></p>
-                    <p><a href={college?.website} target="_blank" rel="noopener noreferrer">{college?.website}</a></p>
-                    {college?.imageUrl && <img src={college?.imageUrl} alt={college?.name} style={{ width: '100%' }} />}
-                  </div>
-                </Popup>
-              </Marker>
+              {userLocation && (
+                <Marker position={userLocation} icon={defaultIcon}>
+                  <Popup>Your Current Location</Popup>
+                </Marker>
+              )}
+              {center && (
+                <Marker position={center} icon={defaultIcon}>
+                  <Popup>College Location</Popup>
+                </Marker>
+              )}
+              {pathCoordinates.length > 0 && (
+                <Polyline positions={pathCoordinates} color="blue" />
+              )}
             </MapContainer>
           </div>
         </div>
@@ -88,6 +142,9 @@ const CollegeDetail: React.FC = () => {
           <div className="bg-white shadow-md rounded-md p-4">
             <h2 className="text-xl font-semibold mb-2">{college?.name}</h2>
             <p className="text-gray-600">{college?.description}</p>
+            <button onClick={handleTrack} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              {track ? 'Stop Tracking' : 'Go To College'}
+            </button>
             {/* Add more details as needed */}
           </div>
         </div>
